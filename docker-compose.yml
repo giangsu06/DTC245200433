@@ -18,11 +18,23 @@ services:
       - mysql_data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./database/02-create-exporter.sh:/docker-entrypoint-initdb.d/02-create-exporter.sh:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /var/run/mysqld:rw,noexec,nosuid,size=16m,uid=999,gid=999
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     networks:
       - data
       - observability
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      test: ["CMD-SHELL", "mysql --protocol=socket -u root -p\"$$MYSQL_ROOT_PASSWORD\" -Nse 'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -47,7 +59,7 @@ services:
       DB_NAME: cinema
       DB_USER: ${MYSQL_USER:-cinema_app}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      PMA_PUBLIC_URL: http://localhost:${CINEMA_PMA_PORT:-8081}
+      PMA_PUBLIC_URL: http://localhost:${CINEMA_PMA_PORT:-18081}
     depends_on:
       db:
         condition: service_healthy
@@ -79,12 +91,11 @@ services:
       app:
         condition: service_healthy
     ports:
-      - "127.0.0.1:${CINEMA_WEB_PORT:-8080}:8080"
+      - "127.0.0.1:${CINEMA_WEB_PORT:-18080}:8080"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - frontend
-      - observability
     user: "101:101"
     read_only: true
     tmpfs:
@@ -113,8 +124,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     ports:
-      - "127.0.0.1:${CINEMA_PMA_PORT:-8081}:80"
+      - "127.0.0.1:${CINEMA_PMA_PORT:-18081}:80"
     networks:
       - data
       - management
@@ -136,12 +153,18 @@ services:
     networks:
       - data
       - observability
+    user: "65534:65534"
     volumes:
       - ./monitoring/mysql-exporter.cnf:/etc/mysql-exporter/.my.cnf:ro
     expose:
       - "9104"
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=8m
+    cap_drop:
+      - ALL
     logging: *default-logging
 
   nginx-exporter:
@@ -157,6 +180,11 @@ services:
       - observability
     expose:
       - "9113"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=8m
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -174,6 +202,11 @@ services:
       - observability
     expose:
       - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -205,9 +238,8 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=15d
-      - --web.enable-lifecycle
     ports:
-      - "127.0.0.1:${CINEMA_PROMETHEUS_PORT:-9090}:9090"
+      - "127.0.0.1:${CINEMA_PROMETHEUS_PORT:-19090}:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -217,9 +249,13 @@ services:
       - nginx-exporter
       - cadvisor
     networks:
-      - frontend
-      - data
       - observability
+      - management
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -233,7 +269,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     ports:
-      - "127.0.0.1:${CINEMA_GRAFANA_PORT:-3000}:3000"
+      - "127.0.0.1:${CINEMA_GRAFANA_PORT:-13000}:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -244,6 +280,13 @@ services:
     networks:
       - observability
       - management
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /var/log/grafana:rw,noexec,nosuid,size=8m,uid=472,gid=0
+      - /run/grafana:rw,noexec,nosuid,size=8m,uid=472,gid=0
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -259,22 +302,45 @@ services:
       - observability
     expose:
       - "3100"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3100/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
 
-  promtail:
-    image: grafana/promtail:3.2.1
+  alloy:
+    image: grafana/alloy:v1.21.2
     restart: unless-stopped
-    command: -config.file=/etc/promtail/config.yml
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
     volumes:
-      - ./logging/promtail-config.yml:/etc/promtail/config.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./logging/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
     depends_on:
       - loki
       - docker-socket-proxy
     networks:
       - observability
+    user: "473:473"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    expose:
+      - "12345"
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -282,6 +348,7 @@ services:
 networks:
   frontend:
     driver: bridge
+    internal: true
   data:
     driver: bridge
     internal: true
@@ -290,9 +357,11 @@ networks:
     internal: true
   management:
     driver: bridge
+    internal: true
 
 volumes:
   mysql_data:
   prometheus_data:
   grafana_data:
   loki_data:
+  alloy_data:

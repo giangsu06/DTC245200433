@@ -9,8 +9,8 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "id": 1,
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
-      "targets": [{ "expr": "sum by (job) (rate(prometheus_http_requests_total[5m]))", "legendFormat": "{{job}}", "refId": "A" }],
-      "title": "Prometheus HTTP request rate",
+      "targets": [{ "expr": "sum by (method, status) (rate(cinema_http_requests_total[5m]))", "legendFormat": "{{method}} {{status}}", "refId": "A" }],
+      "title": "Application request rate by method and HTTP status",
       "type": "timeseries"
     },
     {
@@ -51,9 +51,10 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         { "expr": "mysql_global_status_threads_connected", "legendFormat": "MySQL connections", "refId": "A" },
-        { "expr": "nginx_connections_active", "legendFormat": "Nginx active connections", "refId": "B" }
+        { "expr": "nginx_connections_active", "legendFormat": "Nginx active connections", "refId": "B" },
+        { "expr": "mysql_up", "legendFormat": "MySQL exporter database connection", "refId": "C" }
       ],
-      "title": "Web and database connections",
+      "title": "MySQL status and web/database connections",
       "type": "timeseries"
     },
     {
@@ -68,6 +69,26 @@
       ],
       "title": "Application traffic and database queries",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "max": 1, "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }] }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 34 },
+      "id": 7,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "auto" },
+      "targets": [{ "expr": "mysql_up", "legendFormat": "MySQL", "refId": "A" }],
+      "title": "MySQL exporter connection",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 18, "x": 6, "y": 34 },
+      "id": 8,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(cinema_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95 request duration", "refId": "A" }],
+      "title": "Application request duration (p95)",
+      "type": "timeseries"
     }
   ],
   "refresh": "15s",
@@ -78,5 +99,5 @@
   "timezone": "browser",
   "title": "Cinema platform overview",
   "uid": "cinema-overview",
-  "version": 1
+  "version": 2
 }
