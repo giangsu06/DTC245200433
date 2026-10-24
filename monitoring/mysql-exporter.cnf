@@ -1,0 +1,5 @@
+[client]
+user = ${MYSQL_EXPORTER_USER}
+password = ${MYSQL_EXPORTER_PASSWORD}
+host = db
+port = 3306

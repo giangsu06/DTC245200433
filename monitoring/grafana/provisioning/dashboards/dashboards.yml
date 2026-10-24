@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Cinema platform
+    orgId: 1
+    folder: Cinema platform
+    type: file
+    disableDeletion: true
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
