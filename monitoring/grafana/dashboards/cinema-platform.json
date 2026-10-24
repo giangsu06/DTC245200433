@@ -10,7 +10,7 @@
       "id": 1,
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
       "targets": [{ "expr": "sum by (job) (rate(prometheus_http_requests_total[5m]))", "legendFormat": "{{job}}", "refId": "A" }],
-      "title": "Scrape request rate",
+      "title": "Prometheus HTTP request rate",
       "type": "timeseries"
     },
     {
@@ -29,8 +29,8 @@
       "gridPos": { "h": 9, "w": 24, "x": 0, "y": 8 },
       "id": 3,
       "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
-      "targets": [{ "expr": "100 * (1 - rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]))", "legendFormat": "{{name}}", "refId": "A" }],
-      "title": "Container CPU usage (raw ratio × 100)",
+      "targets": [{ "expr": "100 * rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])", "legendFormat": "{{name}}", "refId": "A" }],
+      "title": "Container CPU usage",
       "type": "timeseries"
     },
     {

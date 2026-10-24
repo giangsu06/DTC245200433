@@ -29,7 +29,13 @@ const bookingsCreated = new client.Counter({
 });
 
 app.disable("x-powered-by");
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  frameguard: false,
+  xContentTypeOptions: false,
+  referrerPolicy: false,
+  hsts: false
+}));
 app.use(express.json({ limit: "20kb" }));
 app.use((req, res, next) => {
   res.on("finish", () => {
@@ -55,6 +61,10 @@ app.get("/healthz", async (_req, res) => {
 app.get("/metrics", async (_req, res) => {
   res.set("Content-Type", client.register.contentType);
   res.end(await client.register.metrics());
+});
+
+app.get("/admin", (_req, res) => {
+  res.redirect(process.env.PMA_PUBLIC_URL || "http://localhost:8081");
 });
 
 app.get("/api/movies", async (_req, res, next) => {
