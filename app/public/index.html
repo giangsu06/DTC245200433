@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Đặt vé xem phim và sự kiện demo">
+    <title>Rạp Mây — Đặt vé xem phim</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Rạp Mây trang chủ"><span>✦</span> RẠP MÂY</a>
+      <nav aria-label="Điều hướng chính">
+        <a href="#movies">Phim đang chiếu</a>
+        <a href="#how-it-works">Cách đặt vé</a>
+      </nav>
+      <a class="admin-link" href="http://localhost:8081" target="_blank" rel="noreferrer">Quản trị DB ↗</a>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">TRẢI NGHIỆM ĐIỆN ẢNH</p>
+          <h1>Một tấm vé.<br><span>Cả bầu trời cảm xúc.</span></h1>
+          <p>Chọn phim, chọn ghế yêu thích và sẵn sàng cho buổi tối thật khác.</p>
+          <a class="button button-light" href="#movies">Khám phá phim <span>↓</span></a>
+        </div>
+        <div class="hero-art" aria-hidden="true"><div class="orb">✦</div><div class="ticket">ADMIT ONE<br><strong>RẠP MÂY</strong></div></div>
+        <div class="hero-note">Phòng chiếu hôm nay<br><strong>Đang chờ bạn</strong></div>
+      </section>
+
+      <section id="movies" class="section">
+        <div class="section-heading">
+          <div><p class="eyebrow">LỊCH CHIẾU MỚI NHẤT</p><h2>Chọn câu chuyện của bạn</h2></div>
+          <span class="live"><i></i> CẬP NHẬT TRỰC TIẾP</span>
+        </div>
+        <div id="movie-grid" class="movie-grid" aria-live="polite"><p class="loading">Đang tải lịch chiếu…</p></div>
+      </section>
+
+      <section id="how-it-works" class="how">
+        <p class="eyebrow">ĐẶT VÉ THẬT DỄ</p>
+        <h2>Ba bước đến hàng ghế đầu</h2>
+        <div class="steps">
+          <article><span>01</span><h3>Chọn lịch chiếu</h3><p>Tìm bộ phim và khung giờ phù hợp với bạn.</p></article>
+          <article><span>02</span><h3>Chọn ghế ngồi</h3><p>Chọn tối đa 8 ghế còn trống trong phòng.</p></article>
+          <article><span>03</span><h3>Xác nhận vé</h3><p>Hoàn tất đặt vé với thanh toán mô phỏng an toàn.</p></article>
+        </div>
+      </section>
+      <footer><a class="brand" href="/"><span>✦</span> RẠP MÂY</a><p>Đồ án triển khai ứng dụng và quản trị hệ thống · Thanh toán demo</p></footer>
+    </main>
+    <dialog id="booking-dialog">
+      <form method="dialog" class="dialog-close"><button aria-label="Đóng">×</button></form>
+      <div id="booking-content"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+node_modules/
+npm-debug.log*
+coverage/
+*.log
+*.pem
+*.key
+*.crt
+*.pdf
+*.docx
+.DS_Store
+Thumbs.db
