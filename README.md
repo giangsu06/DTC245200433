@@ -204,7 +204,6 @@ nginx/                Reverse proxy và security headers
 monitoring/           Prometheus, Grafana provisioning và dashboard
 logging/              Loki và Grafana Alloy
 docs/BAO-CAO.md       Báo cáo đồ án định dạng Markdown
-docs/BAO-CAO.html     Bản HTML có bố cục A4 để in
 docker-compose.yml    Toàn bộ dịch vụ và network/volume
 .env.example          Mẫu cấu hình, không chứa secret sử dụng thật
 ```
@@ -222,4 +221,4 @@ git remote add origin https://github.com/<TEN_TAI_KHOAN>/<MA_SO_SINH_VIEN>.git
 git push -u origin main
 ```
 
-Không đưa `.env`, mật khẩu hoặc dữ liệu khách hàng thật vào commit. Điền mã sinh viên, họ tên, lớp, giảng viên và trường vào bìa [báo cáo Markdown](docs/BAO-CAO.md) hoặc [bản HTML](docs/BAO-CAO.html); chụp ảnh website, phpMyAdmin, dashboard, Prometheus Targets và LogQL sau khi stack chạy để thay các ô minh chứng trong báo cáo.
+Không đưa `.env`, mật khẩu hoặc dữ liệu khách hàng thật vào commit. Điền mã sinh viên, họ tên, lớp, giảng viên và trường vào bìa [báo cáo Markdown](docs/BAO-CAO.md); chụp ảnh website, phpMyAdmin, dashboard, Prometheus Targets và LogQL sau khi stack chạy để thay các ô minh chứng trong báo cáo.

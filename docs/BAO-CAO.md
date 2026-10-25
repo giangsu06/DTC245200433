@@ -33,7 +33,7 @@ Báo cáo trình bày quá trình xây dựng một hệ thống đặt vé xem 
 3. Ứng dụng đặt vé và cơ sở dữ liệu
 4. Nginx reverse proxy và security headers
 5. Giám sát Prometheus và Grafana
-6. Tập trung log Loki, Promtail và LogQL
+6. Tập trung log Loki, Grafana Alloy và LogQL
 7. Hardening và quản lý cấu hình
 8. Quy trình triển khai và kiểm thử
 9. Minh chứng demo và đánh giá kết quả
@@ -48,7 +48,7 @@ Báo cáo trình bày quá trình xây dựng một hệ thống đặt vé xem 
 | Cơ sở dữ liệu | MySQL 8.4 | Lưu phim, lịch chiếu, ghế/vé |
 | Quản trị DB | phpMyAdmin 5.2 | Quan sát dữ liệu và schema |
 | Proxy và metrics | Nginx, Prometheus, Grafana | Điểm vào web, thu thập và trực quan hóa chỉ số |
-| Log | Promtail, Loki, LogQL | Thu thập, lưu trữ và truy vấn log tập trung |
+| Log | Grafana Alloy, Loki, LogQL | Thu thập, lưu trữ và truy vấn log tập trung |
 
 > Các ô trong ngoặc vuông và khung minh chứng cần được sinh viên thay bằng thông tin, ảnh chụp thực tế sau khi triển khai. Báo cáo không khẳng định ảnh hoặc kết quả chạy chưa được xác nhận.
 
@@ -199,11 +199,11 @@ Chụp trang Prometheus Targets có các job up; Grafana dashboard sau khi tạo
 
 ---
 
-## 6. TẬP TRUNG LOG LOKI, PROMTAIL VÀ LOGQL
+## 6. TẬP TRUNG LOG LOKI, GRAFANA ALLOY VÀ LOGQL
 
 ### 6.1 Pipeline log
 
-Các container sử dụng Docker json-file logging với giới hạn 10 MB mỗi file, tối đa 3 file/container. Ứng dụng ghi log request lỗi/health-check lỗi ra stderr; Nginx ghi access và error log ra stdout/stderr. Promtail phát hiện container qua Docker API proxy, gắn nhãn project/service/container và tail các tệp JSON log chỉ đọc. Promtail đẩy các dòng đến Loki qua mạng nội bộ. Grafana truy vấn Loki bằng datasource được provision sẵn.
+Các container sử dụng Docker json-file logging với giới hạn 10 MB mỗi file, tối đa 3 file/container. Ứng dụng ghi log request lỗi/health-check lỗi ra stderr; Nginx ghi access và error log ra stdout/stderr. Grafana Alloy (collector kế nhiệm Promtail, Promtail đã EOL tháng 3/2026) phát hiện container qua Docker Engine API proxy, gắn nhãn project/service/container, parse JSON để trích xuất label `level` và đẩy các dòng đến Loki qua mạng nội bộ. Grafana truy vấn Loki bằng datasource được provision sẵn.
 
 Docker socket có quyền lớn nếu truy cập trực tiếp. Thiết kế dùng docker-socket-proxy, chỉ bật API cần cho container discovery/events/network metadata và tắt POST; proxy không publish cổng ra host. Đây vẫn là thành phần nhạy cảm cần hạn chế network và cập nhật image.
 
@@ -325,7 +325,7 @@ Thay các khung bên dưới bằng screenshot do sinh viên tự chụp sau khi
 | Ứng dụng + DB | Đặt vé, MySQL, phpMyAdmin | Website và bản ghi bookings |
 | Nginx | Reverse proxy và security headers | URL :18080 và response headers |
 | Metrics | Prometheus scrape, Grafana dashboard | Targets và panels |
-| Logs | Loki, Promtail và ít nhất 2–3 LogQL | Explore có kết quả query |
+| Logs | Loki, Grafana Alloy và ít nhất 2–3 LogQL | Explore có kết quả query |
 | Hardening | Non-root, network, secrets, headers, DB roles | Compose/config và demo |
 
 ---
