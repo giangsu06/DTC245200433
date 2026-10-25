@@ -8,7 +8,8 @@
 
 ```text
 Trình duyệt
-   ├── http://localhost:18080 ── Nginx (reverse proxy, security headers) ── Express
+   ├── https://localhost:18443 ── Nginx TLS reverse proxy + security headers ── Express
+   ├── http://localhost:18080 ── Nginx → chuyển hướng HTTPS
    │                                                                       └── MySQL
    ├── http://localhost:18081 ── phpMyAdmin ──────────────────────────────────┘
    └── http://localhost:13000 ── Grafana ── Prometheus / Loki
@@ -52,6 +53,14 @@ notepad .env
 
 Thay **tất cả** giá trị `ReplaceWithLongRandom...` bằng mật khẩu ngẫu nhiên riêng, dài ít nhất 32 ký tự; chỉ dùng chữ và số cho MySQL/Grafana, và chữ, số, dấu gạch dưới hoặc gạch ngang cho `MYSQL_EXPORTER_PASSWORD`. Không đưa `.env` lên GitHub.
 
+Tạo chứng chỉ tự ký dành riêng cho localhost (cần OpenSSL; Git for Windows thường đã cài sẵn):
+
+```powershell
+.\nginx\ssl\generate-local-cert.ps1
+```
+
+Chứng chỉ và private key được tạo trong `nginx\ssl\` nhưng bị Git ignore. Chứng chỉ có CN/SAN `localhost`, có hiệu lực 365 ngày. Đây là chứng chỉ demo tự ký nên trình duyệt có thể cảnh báo **Not secure**; chỉ tiếp tục cho địa chỉ localhost. Không tái sử dụng chứng chỉ/private key này trên máy chủ public.
+
 ```powershell
 docker compose config
 docker compose up -d --build
@@ -62,13 +71,14 @@ docker compose ps
 
 | Thành phần | Địa chỉ |
 |---|---|
-| Website qua Nginx | <http://localhost:18080> |
+| Website qua Nginx HTTPS | <https://localhost:18443> |
+| Website HTTP (chuyển hướng HTTPS) | <http://localhost:18080> |
 | phpMyAdmin | <http://localhost:18081> |
 | Grafana | <http://localhost:13000> |
 | Prometheus | <http://localhost:19090> |
 | Health check ứng dụng | <http://localhost:18080/healthz> |
 
-Các cổng trên khớp với cấu hình `.env` hiện tại. Nếu đổi `CINEMA_WEB_PORT`, `CINEMA_PMA_PORT`, `CINEMA_GRAFANA_PORT` hoặc `CINEMA_PROMETHEUS_PORT`, hãy cập nhật lại địa chỉ truy cập tương ứng.
+Các cổng trên khớp với cấu hình `.env` hiện tại. Nếu đổi `CINEMA_WEB_PORT`, `CINEMA_HTTPS_PORT`, `CINEMA_PMA_PORT`, `CINEMA_GRAFANA_PORT` hoặc `CINEMA_PROMETHEUS_PORT`, hãy cập nhật lại địa chỉ truy cập tương ứng.
 Đăng nhập phpMyAdmin bằng `MYSQL_USER` / `MYSQL_PASSWORD` trong `.env`. Đăng nhập Grafana bằng `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD`. Dashboard **Cinema platform overview** và hai data source Prometheus/Loki được provision tự động.
 
 Theo dõi trạng thái/log:
@@ -80,12 +90,14 @@ docker compose logs -f app nginx db prometheus grafana loki alloy
 
 ## 4. Demo chức năng đặt vé
 
-1. Mở website, chọn phim/lịch chiếu, chọn một hoặc nhiều ghế.
-2. Nhập tên và email demo rồi bấm xác nhận. Mỗi lần đặt tối đa 8 ghế.
-3. Ghi lại mã đặt vé và trạng thái thành công trong hộp thoại xác nhận. Thanh toán chỉ mô phỏng, không phát sinh giao dịch tiền thật.
-4. Đóng hộp thoại, chọn lại lịch chiếu: ghế vừa đặt hiển thị đã có người chọn.
-5. Kiểm tra bảng `movies`, `screenings`, `bookings` trong phpMyAdmin.
-6. Tranh chấp đặt cùng một ghế được bảo vệ bằng transaction khóa lịch chiếu và unique key `(screening_id, seat_number)`.
+1. Mở website, chọn phim và suất chiếu; sơ đồ ghế hiển thị theo hàng, có phân biệt ghế trống, ghế đang chọn và ghế đã đặt.
+2. Chọn tối đa 8 ghế, nhập họ tên và email nhận vé. Tổng tiền được cập nhật theo số ghế.
+3. Kiểm tra lại phim, giờ chiếu, phòng, ghế, email và tổng tiền ở bước thanh toán demo; quay lại để chỉnh sửa nếu cần.
+4. Bấm **Xác nhận thanh toán demo** để tạo vé. Đây chỉ là mô phỏng, không thu tiền, không kết nối ngân hàng và không yêu cầu dữ liệu thẻ.
+5. Ghi lại mã vé, trạng thái thanh toán mô phỏng và danh sách ghế trong xác nhận thành công.
+6. Đóng hộp thoại, chọn lại suất chiếu: ghế vừa đặt hiển thị đã có người chọn.
+7. Kiểm tra bảng `movies`, `screenings`, `bookings` trong phpMyAdmin.
+8. Tranh chấp đặt cùng một ghế được bảo vệ bằng transaction khóa lịch chiếu và unique key `(screening_id, seat_number)`.
 
 ## 5. Kiểm thử nghiệp vụ giai đoạn 1
 
@@ -93,10 +105,10 @@ Chạy `docker compose ps` và xác nhận `db`/`app` healthy trước khi kiể
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
-| Health và DB | Mở `http://localhost:18080/healthz` | HTTP 200, JSON có `status: ok` và `database: connected`. |
-| Danh sách phim/suất | Mở `http://localhost:18080/api/movies` | JSON có tên, mô tả, thể loại, thời lượng, phòng, giờ chiếu, giá và số ghế còn trống. |
-| Ghế | Mở `http://localhost:18080/api/screenings/1/seats` | Danh sách ghế có trạng thái `booked`; ghế đặt trước bị vô hiệu hóa trên giao diện. |
-| Đặt vé hợp lệ | Chọn ghế trống, nhập tên/email hợp lệ và xác nhận | HTTP 201; giao diện giữ hộp thoại xác nhận với mã `RM-...`, danh sách ghế và thông báo thanh toán mô phỏng. |
+| Health và DB | Mở `https://localhost:18443/healthz` | HTTP 200, JSON có `status: ok` và `database: connected`. |
+| Danh sách phim/suất | Mở `https://localhost:18443/api/movies` | JSON có tên, mô tả, thể loại, thời lượng, phòng, giờ chiếu, giá và số ghế còn trống. |
+| Ghế | Mở `https://localhost:18443/api/screenings/1/seats` | Danh sách ghế có trạng thái `booked`; ghế đặt trước bị vô hiệu hóa trên giao diện. |
+| Luồng thanh toán demo | Chọn ghế, nhập tên/email, kiểm tra trang tổng kết rồi xác nhận demo | Chưa tạo vé trước khi xác nhận; sau xác nhận HTTP 201, hộp thoại có mã `RM-...`, phim, giờ chiếu, ghế, tổng tiền và thông báo không thu tiền thật. |
 | Đầu vào sai | Gửi email sai, không chọn ghế, ghế ngoài sức chứa hoặc trên 8 ghế | Bị từ chối; không tạo bản ghi đặt vé. |
 | Đặt trùng đồng thời | Gửi hai yêu cầu cùng suất và cùng ghế trống gần như đồng thời | Một yêu cầu HTTP 201; yêu cầu còn lại HTTP 409; chỉ có một bản ghi cho cặp suất/ghế. |
 | DB tool | Đăng nhập phpMyAdmin và xem `movies`, `screenings`, `bookings` | Dữ liệu mẫu hiện diện; đặt vé mới xuất hiện trong `bookings`. |
@@ -162,7 +174,7 @@ Các truy vấn lần lượt xem log ứng dụng, lọc POST đặt vé, lọc
 ## 8. Cấu hình bảo mật
 
 - Các mạng `frontend`, `data`, `observability` và `management` đều đặt `internal: true`. Ứng dụng/Nginx, database/phpMyAdmin, monitoring và quản trị chỉ nối vào những mạng cần thiết; Prometheus được nối thêm vào `management` để truy cập giao diện local sau khi cô lập mạng.
-- Chỉ publish website `18080`, phpMyAdmin `18081`, Grafana `13000` và Prometheus `19090`, tất cả bind vào `127.0.0.1`. Ứng dụng, MySQL, Loki và exporters không publish cổng ra host.
+- Chỉ publish website HTTP `18080`, HTTPS `18443`, phpMyAdmin `18081`, Grafana `13000` và Prometheus `19090`, tất cả bind vào `127.0.0.1`. Ứng dụng, MySQL, Loki và exporters không publish cổng ra host.
 - Ứng dụng chạy bằng user `node`, filesystem chỉ đọc, bỏ Linux capabilities và bật `no-new-privileges`.
 - Nginx chạy non-root (UID 101) trên cổng container 8080, filesystem chỉ đọc, bỏ capabilities và chỉ có tmpfs cần thiết.
 - MySQL chạy bằng user `mysql`, filesystem chỉ đọc và chỉ giữ các capabilities cần cho entrypoint khởi tạo (`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`); `/tmp` và socket runtime đặt trên tmpfs. Database không publish port.
@@ -174,7 +186,7 @@ Các truy vấn lần lượt xem log ứng dụng, lọc POST đặt vé, lọc
 - Alloy đọc Docker API qua socket proxy chỉ bật quyền đọc `CONTAINERS`, `EVENTS`, `NETWORKS`, `PING`, `VERSION`, chặn POST. Docker socket vẫn là tài nguyên nhạy cảm; không expose proxy ra host hoặc mạng không tin cậy.
 - Docker log dùng rotation `10m` × 3 file; API giới hạn JSON body 20 KB và Nginx giới hạn request body 1 MB. Chưa đặt CPU/memory quota cho container; cần hiệu chỉnh theo tài nguyên máy trước khi triển khai tải thực.
 - Mật khẩu lấy từ `.env` cục bộ (được `.gitignore` loại trừ), không ghi vào file cấu hình được commit. `.env.example` chỉ chứa tên biến/giá trị hướng dẫn; khi chạy production nên dùng Docker secrets hoặc secret manager.
-- Các endpoint quản trị chỉ phù hợp demo cục bộ. Khi triển khai Internet cần HTTPS (TLS certificate), xác thực/ủy quyền, rate limiting, quản lý secret, backup và kiểm thử bảo mật bổ sung.
+- HTTPS local dùng chứng chỉ tự ký; trình duyệt sẽ không đánh dấu chứng chỉ này là tin cậy nếu chưa cài CA phù hợp. Các endpoint quản trị chỉ phù hợp demo cục bộ. Khi triển khai Internet cần chứng chỉ TLS từ CA tin cậy, xác thực/ủy quyền, rate limiting, quản lý secret, backup và kiểm thử bảo mật bổ sung.
 
 ## 9. Dừng, reset dữ liệu và xử lý lỗi
 

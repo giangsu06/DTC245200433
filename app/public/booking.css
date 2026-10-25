@@ -1,0 +1,385 @@
+dialog {
+  overflow-y: auto;
+  width: min(980px, calc(100vw - 48px));
+  max-height: min(820px, calc(100dvh - 48px));
+  padding: 30px 36px;
+}
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  align-items: center;
+  gap: 32px;
+  margin-top: 22px;
+}
+
+.seat-selection-panel,
+.booking-details-panel {
+  min-width: 0;
+}
+
+.seat-selection-panel .screen-label {
+  margin-top: 0;
+}
+
+.booking-details-panel {
+  padding: 18px;
+  border: 1px solid #e8ede7;
+  border-radius: 5px;
+  background: #fbfcfa;
+}
+
+.booking-steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid #edf0ec;
+}
+
+.booking-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #929b94;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.booking-steps li + li::before {
+  content: "";
+  width: 16px;
+  height: 1px;
+  margin-right: 2px;
+  background: #e4e9e3;
+}
+
+.booking-steps li span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eff2ed;
+  font-size: 9px;
+}
+
+.booking-steps li.active {
+  color: var(--green);
+}
+
+.booking-steps li.active span,
+.booking-steps li.complete span {
+  background: var(--green);
+  color: #fff;
+}
+
+.seat-map {
+  max-width: 390px;
+}
+
+.seat-map--rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seat-row {
+  display: grid;
+  grid-template-columns: 18px repeat(3, minmax(0, 1fr)) 14px repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: 7px;
+}
+
+.seat-row-label {
+  color: #879189;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.seat-row .seat {
+  width: 100%;
+  min-width: 0;
+  font-size: 9px;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+
+.seat-row .seat:not(:disabled):hover {
+  transform: translateY(-2px);
+  border-color: #183e35;
+}
+
+.seat-row .seat:focus-visible,
+.booking-form input:focus-visible,
+.checkout-actions button:focus-visible {
+  outline: 3px solid #e8a16e;
+  outline-offset: 2px;
+}
+
+.seat-aisle {
+  width: 14px;
+}
+
+.seat-selection-summary {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #e8ede7;
+  border-radius: 4px;
+  background: #f8faf7;
+  font-size: 10px;
+}
+
+.seat-selection-summary span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.seat-selection-summary strong {
+  color: var(--green);
+  text-align: right;
+}
+
+.form-hint {
+  margin: -3px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.checkout-card {
+  margin: 22px 0 14px;
+  padding: 16px;
+  border: 1px solid #e7ece5;
+  border-radius: 5px;
+  background: #fbfcfa;
+}
+
+.checkout-movie {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e7ece5;
+}
+
+.checkout-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 4px;
+  background: #edf3eb;
+  font-size: 20px;
+}
+
+.checkout-movie div {
+  display: grid;
+  gap: 5px;
+}
+
+.checkout-movie strong {
+  color: #24372e;
+  font-size: 13px;
+}
+
+.checkout-movie div span,
+.checkout-line {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.checkout-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.checkout-line strong {
+  color: #35443b;
+  text-align: right;
+}
+
+.checkout-email {
+  overflow-wrap: anywhere;
+}
+
+.checkout-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e7ece5;
+  color: #35443b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.checkout-total strong {
+  color: var(--green);
+  font-size: 16px;
+}
+
+.mock-payment-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid #dceadd;
+  border-radius: 4px;
+  background: #f0f6ef;
+  color: var(--green);
+}
+
+.mock-payment-note > span {
+  display: grid;
+  flex: 0 0 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dceadd;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mock-payment-note strong {
+  font-size: 11px;
+}
+
+.mock-payment-note p {
+  margin: 4px 0 0;
+  color: #607067;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.checkout-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.checkout-actions .button {
+  min-height: 42px;
+  gap: 10px;
+}
+
+.button-back {
+  border: 1px solid #dce3dc;
+  background: #fff;
+  color: #43544a;
+}
+
+.success-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6f1e4;
+  color: var(--green);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.success-intro {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ticket-summary {
+  display: grid;
+  gap: 7px;
+  margin: 18px 0 14px;
+  padding: 16px;
+  border: 1px dashed #cbd8cc;
+  border-radius: 5px;
+  background: #fbfcfa;
+  color: #536158;
+  font-size: 10px;
+}
+
+.ticket-total {
+  margin-top: 5px;
+  color: var(--green);
+  font-size: 15px;
+}
+
+@media (max-width: 520px) {
+  dialog {
+    padding: 26px 18px 20px;
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .booking-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .booking-details-panel {
+    padding: 13px;
+  }
+
+  .booking-steps {
+    gap: 5px;
+  }
+
+  .booking-steps li {
+    gap: 4px;
+    font-size: 8px;
+  }
+
+  .booking-steps li + li::before {
+    width: 8px;
+  }
+
+  .seat-row {
+    grid-template-columns: 14px repeat(3, minmax(0, 1fr)) 8px repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .seat-aisle {
+    width: 8px;
+  }
+
+  .checkout-actions {
+    flex-direction: column-reverse;
+  }
+
+  .checkout-actions .button {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 521px) and (max-width: 760px) {
+  dialog {
+    width: calc(100vw - 32px);
+    padding: 26px 24px;
+  }
+
+  .booking-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .booking-details-panel {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat-row .seat {
+    transition: none;
+  }
+}
