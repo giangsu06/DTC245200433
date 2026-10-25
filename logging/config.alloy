@@ -1,0 +1,72 @@
+discovery.docker "cinema" {
+	host             = "tcp://docker-socket-proxy:2375"
+	refresh_interval = "15s"
+
+	filter {
+		name   = "label"
+		values = ["com.docker.compose.project=cinema-platform"]
+	}
+}
+
+discovery.relabel "cinema" {
+	targets = discovery.docker.cinema.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+		target_label  = "service"
+	}
+
+	rule {
+		source_labels = ["service"]
+		regex         = "app"
+		target_label  = "service"
+		replacement   = "cinema-app"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container"
+		replacement   = "$1"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+		regex         = "app|db|nginx|phpmyadmin|mysql-exporter|nginx-exporter|cadvisor|prometheus|grafana|loki"
+		action        = "keep"
+	}
+}
+
+loki.process "cinema" {
+	forward_to = [loki.write.local.receiver]
+
+	stage.drop {
+		older_than          = "168h"
+		drop_counter_reason = "outside_retention"
+	}
+
+	stage.json {
+		expressions = {
+			level = "level",
+		}
+	}
+
+	stage.labels {
+		values = {
+			level = "",
+		}
+	}
+}
+
+loki.source.docker "cinema" {
+	host       = "tcp://docker-socket-proxy:2375"
+	targets    = discovery.relabel.cinema.output
+	labels     = {project = "cinema-platform"}
+	forward_to = [loki.process.cinema.receiver]
+}
+
+loki.write "local" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+}

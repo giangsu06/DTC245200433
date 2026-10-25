@@ -8,9 +8,9 @@
     "start": "node src/server.js"
   },
   "dependencies": {
-    "express": "4.21.1",
+    "express": "4.22.3",
     "helmet": "8.0.0",
-    "mysql2": "3.11.4",
+    "mysql2": "3.24.6",
     "prom-client": "15.1.3"
   }
 }

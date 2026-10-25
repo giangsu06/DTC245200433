@@ -8,8 +8,17 @@ const dateTime = new Intl.DateTimeFormat("vi-VN", { weekday: "short", day: "2-di
 
 async function request(url, options) {
   const response = await fetch(url, options);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "Không thể hoàn tất yêu cầu.");
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error("Máy chủ trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
+  }
+  if (!response.ok) {
+    const error = new Error(payload.error || "Không thể hoàn tất yêu cầu.");
+    error.status = response.status;
+    throw error;
+  }
   return payload;
 }
 
@@ -26,7 +35,7 @@ function renderMovies(screenings) {
   }
   grid.innerHTML = screenings.map((item) => `
     <article class="movie-card">
-      <div class="poster"><span>${item.poster_emoji}</span><small>${item.genre}</small></div>
+      <div class="poster"><span>${escapeHtml(item.poster_emoji)}</span><small>${escapeHtml(item.genre)}</small></div>
       <div class="movie-info">
         <div class="movie-title"><div><h3>${escapeHtml(item.title)}</h3><p>${item.duration_minutes} phút · ${escapeHtml(item.room_name)}</p></div><span class="rating">★ 9.2</span></div>
         <p class="description">${escapeHtml(item.description)}</p>
@@ -46,6 +55,9 @@ function escapeHtml(value) {
 }
 
 async function openBooking(screeningId, title, price) {
+  bookingContent.innerHTML = '<p class="booking-loading" role="status" aria-live="polite">Đang tải sơ đồ ghế...</p>';
+  if (!dialog.open) dialog.showModal();
+
   try {
     const seatMap = await request(`/api/screenings/${screeningId}/seats`);
     bookingContent.innerHTML = `
@@ -57,7 +69,7 @@ async function openBooking(screeningId, title, price) {
       <form id="booking-form" class="booking-form">
         <label>Họ tên<input name="customerName" required minlength="2" maxlength="120" autocomplete="name" placeholder="Nguyễn Văn A"></label>
         <label>Email<input name="customerEmail" required type="email" maxlength="190" autocomplete="email" placeholder="ban@example.com"></label>
-        <div class="total-row"><span>Tổng thanh toán demo</span><strong id="booking-total">${money.format(0)}</strong></div>
+        <div class="total-row"><span>Tổng tiền (mô phỏng, không thu tiền thật)</span><strong id="booking-total">${money.format(0)}</strong></div>
         <button class="button button-dark submit-booking" type="submit">Xác nhận đặt vé <span>→</span></button>
       </form>`;
 
@@ -92,18 +104,37 @@ async function openBooking(screeningId, title, price) {
             customerEmail: form.get("customerEmail")
           })
         });
-        dialog.close();
-        showToast(`${result.message} Ghế: ${result.seats.join(", ")}.`);
+        bookingContent.innerHTML = `
+          <section class="booking-success" role="status" aria-live="polite">
+            <p class="eyebrow">ĐẶT VÉ THÀNH CÔNG</p>
+            <h2>Vé của bạn đã được ghi nhận</h2>
+            <p>Mã đặt vé</p>
+            <strong class="booking-code">${escapeHtml(result.bookingCode)}</strong>
+            <p>Ghế: ${result.seats.join(", ")}</p>
+            <p class="payment-notice">Trạng thái: đã tạo vé · Thanh toán mô phỏng, không phát sinh giao dịch tiền thật.</p>
+            <button class="button button-dark" id="close-confirmation" type="button">Đóng</button>
+          </section>`;
+        bookingContent.querySelector("#close-confirmation").addEventListener("click", () => dialog.close());
         loadMovies();
       } catch (error) {
+        if (error.status === 409) {
+          showToast(error.message);
+          openBooking(screeningId, title, price);
+          return;
+        }
         showToast(error.message);
-        dialog.close();
-        openBooking(screeningId, title, price);
+        submit.disabled = false;
+        submit.textContent = "Thử đặt vé lại";
       }
     });
-    dialog.showModal();
   } catch (error) {
     showToast(error.message);
+    bookingContent.innerHTML = `
+      <section class="booking-error" role="alert">
+        <p>Không thể tải sơ đồ ghế: ${escapeHtml(error.message)}</p>
+        <button class="button button-dark" id="retry-seats" type="button">Thử lại</button>
+      </section>`;
+    bookingContent.querySelector("#retry-seats").addEventListener("click", () => openBooking(screeningId, title, price));
   }
 }
 
@@ -111,7 +142,12 @@ async function loadMovies() {
   try {
     renderMovies(await request("/api/movies"));
   } catch (error) {
-    grid.innerHTML = `<p class="empty">Không tải được lịch chiếu. ${escapeHtml(error.message)}</p>`;
+    grid.innerHTML = `
+      <div class="empty" role="alert">
+        <p>Không tải được lịch chiếu. ${escapeHtml(error.message)}</p>
+        <button class="button button-dark" id="retry-movies" type="button">Tải lại</button>
+      </div>`;
+    grid.querySelector("#retry-movies").addEventListener("click", loadMovies);
   }
 }
 

@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+case "$MYSQL_USER" in
+  *[!A-Za-z0-9_]*|"") echo "MYSQL_USER may contain only letters, digits, and underscores" >&2; exit 1 ;;
+esac
 case "$MYSQL_EXPORTER_USER" in
   *[!A-Za-z0-9_]*|"") echo "MYSQL_EXPORTER_USER may contain only letters, digits, and underscores" >&2; exit 1 ;;
 esac
@@ -13,6 +16,10 @@ if [ "${#MYSQL_EXPORTER_PASSWORD}" -lt 32 ]; then
 fi
 
 mysql --protocol=socket -uroot -p"$MYSQL_ROOT_PASSWORD" <<SQL
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM '${MYSQL_USER}'@'%';
+GRANT SELECT ON cinema.* TO '${MYSQL_USER}'@'%';
+GRANT INSERT ON cinema.bookings TO '${MYSQL_USER}'@'%';
+GRANT UPDATE ON cinema.screenings TO '${MYSQL_USER}'@'%';
 CREATE USER IF NOT EXISTS '${MYSQL_EXPORTER_USER}'@'%' IDENTIFIED BY '${MYSQL_EXPORTER_PASSWORD}';
 GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '${MYSQL_EXPORTER_USER}'@'%';
 SQL
