@@ -348,7 +348,6 @@ services:
 networks:
   frontend:
     driver: bridge
-    internal: true
   data:
     driver: bridge
     internal: true
@@ -357,7 +356,6 @@ networks:
     internal: true
   management:
     driver: bridge
-    internal: true
 
 volumes:
   mysql_data:
